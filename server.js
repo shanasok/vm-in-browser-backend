@@ -1,19 +1,22 @@
 const express = require('express');
 const cors = require('cors'); // Import the cors middleware
-const { exec, spawn } = require('child_process'); // Import exec from child_process
+const { spawn } = require('child_process');
 
+const { startVM } = require('./src/vm/vmStarter.js');
+const { generateTraineeVMname } = require('./src/vm/vmCreator.js');
+const { cloneVmWithVmrun, getNextVncPort, updateVncPort, startWebsockify, getWebSocketPort } = require('./src/vm/vmModifyVNCPort.js');
 
 // Create an instance of Express
 const app = express();
 
 // Define a port for the server to listen on
 const PORT = 4000;
-
-const noVNCDirectory = '/Users/shanasokolic/IdeaProjects/noVNC';
-const vncCommand = './utils/novnc_proxy --vnc localhost:5900';
+const webDir = '/Users/shanasokolic/IdeaProjects/noVNC';
+const vncHost = 'localhost';
+const templateVmxPath = '/Users/shanasokolic/Virtual Machines.localized/TeachingVM.vmwarevm/TeachingVM.vmx';
 
 // Function to start the noVNC proxy server
-function startNoVNCProxy() {
+async function startNoVNCProxy() {
   console.log('Starting noVNC proxy server...');
 
   const noVNCProcess = spawn('./utils/novnc_proxy', ['--vnc', 'localhost:5900'], {
@@ -59,27 +62,39 @@ app.get('/', (req, res) => {
 });
 
 // Define an API endpoint (e.g., to start a VM)
-app.get('/api/start-vm', (req, res) => {
-  // Simulate starting a VM
-  if (req.method === 'GET') {
+app.get('/api/start-vm', async (req, res) => {
 
-    const vmxPath = '/Users/shanasokolic/Virtual Machines.localized/Kali_Linux_Debian 12.x 64-bit Arm.vmwarevm/Kali_Linux_Debian 12.x 64-bit Arm.vmx';
+  try {
+    if (req.method === 'GET') {
 
-    // Define API endpoint to start the VM
-    console.log('Starting virtual machine...');
-    exec(`vmrun start '${vmxPath}'`, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error starting VM: ${error.message}`);
-        return res.status(500).json({ message: 'Failed to start VM.', error: error.message });
-      }
-      console.log(`VM started successfully: ${stdout}`);
-      //http://Shoshanas-MacBook-Pro.local:6080/vnc.html?host=Shoshanas-MacBook-Pro.local&port=6080
-      res.status(200).json({ message: 'VM started successfully!', vncUrl: 'http://localhost:6080/vnc.html' });
-    });
-  } else {
-    res.setHeader('Allow', ['GET']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+      const traineeVMPath = generateTraineeVMname();
+      const internalPort = getNextVncPort();
+      const externalPort = getWebSocketPort();
+
+      await cloneVmWithVmrun(templateVmxPath, traineeVMPath)
+          .then(result => console.log(result))
+          .catch(error => console.error("Clone failed:", error.message));
+      console.log("after clone call");
+
+      updateVncPort(traineeVMPath, internalPort);  // Modify the VNC port of the cloned VM
+      startVM(res, traineeVMPath).then(result => console.log(result));
+      startWebsockify(webDir, externalPort, vncHost, internalPort)
+          .then(result =>
+              console.log(result));
+
+      res.status(200).json({
+        message: 'VM started successfully!',
+        vncUrl: `http://localhost:${externalPort}/vnc.html`
+      });
+
+    } else {
+      res.setHeader('Allow', ['GET']);
+      res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+  }catch(error){
+    return res.status(500).json({ message: 'Failed on backend', error: error.message });
   }
+  return res;
 });
 
 // Start the server
