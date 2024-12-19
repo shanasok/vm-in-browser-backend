@@ -2,7 +2,7 @@
 const { spawn } = require('child_process');
 const config = require('../../.config.js');
 
-async function startNoVNCProxy() {
+function startNoVNCProxy() {
     console.log('Starting noVNC proxy server...');
 
     const noVNCProcess = spawn(

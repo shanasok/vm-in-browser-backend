@@ -4,10 +4,6 @@ const util = require('util');
 const execPromise = util.promisify(exec);
 const config = require('./../../.config.js');
 
-// Paths to your template and cloned VM files
-// let vmInternalPort = 5900;
-// let externalWebSocketPort = 6080;
-
 let vmInternalPort = config.ports.internalVncPort;
 let externalWebSocketPort = config.ports.externalWebSocketPort;
 
