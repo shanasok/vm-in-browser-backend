@@ -10,8 +10,8 @@ const vncHost = config.urls.vncHost;
 // Create an instance of Express
 const app = express();
 
-// Enable CORS for all routes
-app.use(cors({ origin: 'http://localhost:3000' }));
+// Configures the cors middleware to allow requests only from the specified origin
+app.use(cors({ origin: `http://${vncHost}:${config.ports.originPort}` }));
 
 // Middleware to parse JSON requests
 app.use(express.json());
@@ -50,5 +50,5 @@ app.get('/api/start-vm', async (req, res) => {
 
 // Start the server
 app.listen(backendServerPort, () => {
-  console.log(`Server is running on http://localhost:${backendServerPort}`);
+  console.log(`Server is running on http://${vncHost}:${backendServerPort}`);
 });
