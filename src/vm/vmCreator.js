@@ -1,17 +1,11 @@
 const fs = require('fs');
+const config = require("../../.config");
 
-const vmxTraineeTemplatesPath = '/Users/shanasokolic/Virtual Machines.localized/traineeVMs/';
-
-function createTraineeVMDirectory(){
-    // Ensure the destination directory exists
-    if (!fs.existsSync(vmxTraineeTemplatesPath)) {
-        fs.mkdirSync(vmxTraineeTemplatesPath, { recursive: true });
-    }
-}
+const pathToDirForTraineeVms = config.paths.pathToDirForTraineeVms;
 
 function generateTraineeVMname() {
     const timestamp = new Date().toISOString(); // Generates a standardized ISO timestamp
-    const result = `${vmxTraineeTemplatesPath}${timestamp}_traineeVM.vmx`;
+    const result = `${pathToDirForTraineeVms}/${timestamp}/Clone_traineeVM.vmx`;
     return result;
 }
 

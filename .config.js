@@ -13,6 +13,7 @@ const config = {
     paths: {
         noVncDir: process.env.NOVNC_DIR || '/Users/shanasokolic/IdeaProjects/noVNC',
         vmTemplatePath: process.env.TEMPLATE_VMX_PATH || '/Users/shanasokolic/Virtual Machines.localized/TeachingVM.vmwarevm/TeachingVM.vmx',
+        pathToDirForTraineeVms: process.env.PATH_TO_DIR_FOR_TRAINEE_VMS || '/Users/shanasokolic/Virtual Machines.localized/traineeVMs/',
     },
 };
 
