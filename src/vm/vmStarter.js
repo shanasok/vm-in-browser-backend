@@ -39,24 +39,24 @@ async function triggerVmWorkflow() {
         const externalPort = getWebSocketPort();
 
         // Step 1: Clone the VM
-        console.log("Cloning the VM...");
+        console.log(`[${new Date().toISOString()}]`, "Cloning the VM...");
         await cloneVmWithVmrun(templateVmxPath, traineeVMPath);
-        console.log("VM cloned successfully.");
+        console.log(`[${new Date().toISOString()}]`, "VM cloned successfully.");
 
         // Step 2: Update the VNC Port
-        console.log("Updating the VNC port...");
+        console.log(`[${new Date().toISOString()}]`, "Updating the VNC port...");
         await updateVncPort(traineeVMPath, internalPort);
-        console.log("VNC port updated successfully.");
+        console.log(`[${new Date().toISOString()}]`, "VNC port updated successfully.");
 
         // Step 3: Start the VM
-        console.log("Starting the VM...");
+        console.log(`[${new Date().toISOString()}]`, "Starting the VM...");
         await startVM(traineeVMPath);
-        console.log("VM started successfully.");
+        console.log(`[${new Date().toISOString()}]`, "VM started successfully.");
 
         // Step 4: Start Websockify
-        console.log("Starting websockify...");
+        console.log(`[${new Date().toISOString()}]`, "Starting websockify...");
         await startWebsockify(noVncDir, externalPort, vncHost, internalPort);
-        console.log("Websockify started successfully.");
+        console.log(`[${new Date().toISOString()}]`, "Websockify started successfully.");
 
         // Return the external WebSocket port once all steps are complete
         return externalPort;
