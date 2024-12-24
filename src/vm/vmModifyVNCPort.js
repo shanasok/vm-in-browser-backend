@@ -1,7 +1,6 @@
 const fs = require('fs');
 const { exec, spawn } = require('child_process');
 const util = require('util');
-const execPromise = util.promisify(exec);
 const config = require('./../../.config.js');
 
 let vmInternalPort = config.ports.internalVncPort;
@@ -17,8 +16,8 @@ function getWebSocketPort() {
 }
 
 // Function to update the VNC port in the VMX file
-function updateVncPort(vmxFile, newPort) {
-    const vmxContent = fs.readFileSync(vmxFile, 'utf8');
+function updateVncPort(vmxFile, newPort, fsModule = fs) {
+    const vmxContent = fsModule.readFileSync(vmxFile, 'utf8');
 
     console.log("before updating VncPort");
     // Replace or add the VNC port line
@@ -29,9 +28,9 @@ function updateVncPort(vmxFile, newPort) {
 
     // If the port was not found, append it to the end of the file
     if (!/RemoteDisplay\.vnc\.port/.test(vmxContent)) {
-        fs.appendFileSync(vmxFile, `\nRemoteDisplay.vnc.port = "${newPort}"\n`);
+        fsModule.appendFileSync(vmxFile, `\nRemoteDisplay.vnc.port = "${newPort}"\n`);
     } else {
-        fs.writeFileSync(vmxFile, updatedContent, 'utf8');
+        fsModule.writeFileSync(vmxFile, updatedContent, 'utf8');
     }
 
     console.log(`Updated VNC port to: ${newPort}`);
@@ -71,9 +70,19 @@ async function startWebsockify(webDir, websocketPort, vncHost, vncPort) {
     return websockifyProcess;
 }
 
+let execPromise;
+
+// Function to allow injecting a mock for execPromise
+function setExecPromise(mockedExecPromise) {
+    execPromise = mockedExecPromise;
+}
 
 // Execute the cloning operation with vmrun (this requires vmrun to be installed and accessible)
 async function cloneVmWithVmrun(templateVmx, clonedVmx) {
+    if (!execPromise) {
+        throw new Error('execPromise is not initialized. Call initializeExecPromise() first.');
+    }
+
     // Use vmrun to clone the VM
     const cloneCommand = `vmrun clone "${templateVmx}" "${clonedVmx}" full`;
 
@@ -93,4 +102,4 @@ async function cloneVmWithVmrun(templateVmx, clonedVmx) {
     }
 }
 
-module.exports = { cloneVmWithVmrun, getNextVncPort, updateVncPort, startWebsockify, getWebSocketPort };
+module.exports = { cloneVmWithVmrun, getNextVncPort, updateVncPort, startWebsockify, getWebSocketPort, setExecPromise };

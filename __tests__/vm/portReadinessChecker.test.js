@@ -1,12 +1,7 @@
-const { expect, jest } = require('@jest/globals');
+const { expect } = require('@jest/globals');
 const portReadinessChecker = require('../../src/vm/portReadinessChecker.js');
-const net = require("net");
 
 jest.mock('net');
-jest.mock('../../src/vm/portReadinessChecker.js', () => ({
-    isPortOpen: jest.fn(),
-    waitForVMToBeReady: jest.requireActual('../../src/vm/portReadinessChecker.js').waitForVMToBeReady,
-}));
 
 describe('isPortOpen', () => {
     it('should resolve true if the port is open', async () => {
@@ -73,6 +68,12 @@ describe('isPortOpen', () => {
 });
 
 describe('waitForVMToBeReady', () => {
+
+    jest.mock('../../src/vm/portReadinessChecker.js', () => ({
+        isPortOpen: jest.fn(),
+        waitForVMToBeReady: jest.requireActual('../../src/vm/portReadinessChecker.js').waitForVMToBeReady,
+    }));
+
     it('should resolve true if the VM becomes ready', async () => {
         const isPortOpenMock = jest.fn().mockResolvedValue(true);
 

@@ -1,3 +1,4 @@
+const { expect } = require('@jest/globals');
 const { generateTraineeVMname } = require('../../src/vm/vmCreator.js');
 const config = require('../../.config');
 
