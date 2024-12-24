@@ -1,9 +1,7 @@
 const net = require('net');
 
-function isPortOpen(host, port, timeout = 15000) {
+function isPortOpen(host, port, timeout = 15000, socket = new net.Socket()) {
     return new Promise((resolve, reject) => {
-        const socket = new net.Socket();
-
         socket.setTimeout(timeout);
 
         // Handle connection errors
@@ -37,6 +35,7 @@ function isPortOpen(host, port, timeout = 15000) {
         }
     });
 }
+
 
 async function waitForVMToBeReady(host, port, maxRetries = 10, delay = 1000, isPortOpenFn = isPortOpen) {
     for (let i = 0; i < maxRetries; i++) {

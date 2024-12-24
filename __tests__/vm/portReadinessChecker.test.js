@@ -1,5 +1,6 @@
 const { expect, jest } = require('@jest/globals');
 const portReadinessChecker = require('../../src/vm/portReadinessChecker.js');
+const net = require("net");
 
 jest.mock('net');
 jest.mock('../../src/vm/portReadinessChecker.js', () => ({
@@ -10,31 +11,64 @@ jest.mock('../../src/vm/portReadinessChecker.js', () => ({
 describe('isPortOpen', () => {
     it('should resolve true if the port is open', async () => {
         const net = require('net');
-        net.Socket.mockImplementation(() => ({
+
+        const socketMock = {
             setTimeout: jest.fn(),
             once: jest.fn((event, callback) => {
-                if (event === 'connect') callback();
+                if (event === 'connect') callback(true);
             }),
             destroy: jest.fn(),
             connect: jest.fn(),
-        }));
+        };
 
-        const result = await portReadinessChecker.isPortOpen('localhost', 5900);
+        net.Socket.mockImplementation(() => socketMock);
+
+        const result = await portReadinessChecker.isPortOpen('localhost', 5900, 15000, socketMock);
         expect(result).toBe(true);
+        expect(socketMock.setTimeout).toHaveBeenCalledWith(15000);
+        expect(socketMock.connect).toHaveBeenCalledWith(5900, 'localhost');
+        expect(socketMock.destroy).toHaveBeenCalled();
     });
 
     it('should reject with an error if the connection fails', async () => {
         const net = require('net');
-        net.Socket.mockImplementation(() => ({
+
+        const socketMock = {
             setTimeout: jest.fn(),
             once: jest.fn((event, callback) => {
                 if (event === 'error') callback(new Error('Connection failed'));
             }),
             destroy: jest.fn(),
             connect: jest.fn(),
-        }));
+        };
 
-        await expect(portReadinessChecker.isPortOpen('localhost', 5899)).rejects.toThrow('Failed to connect to localhost:5899: ');
+        net.Socket.mockImplementation(() => socketMock);
+
+        await expect(portReadinessChecker.isPortOpen('localhost', 5899, 15000, socketMock)).rejects.toThrow('Failed to connect to localhost:5899: ');
+        expect(socketMock.setTimeout).toHaveBeenCalledWith(15000);
+        expect(socketMock.connect).toHaveBeenCalledWith(5899, 'localhost');
+        expect(socketMock.destroy).toHaveBeenCalled();
+    });
+
+    it('should reject with an error if the connection times out', async () => {
+        const net = require('net');
+
+        const socketMock = {
+            setTimeout: jest.fn(),
+            once: jest.fn((event, callback) => {
+                if (event == 'timeout') callback(new Error('Connection timed out'));
+            }),
+            destroy: jest.fn(),
+            connect: jest.fn(),
+        };
+
+        net.Socket.mockImplementation(() => socketMock);
+
+        await expect(portReadinessChecker.isPortOpen('localhost', 5899, 15000, socketMock)).rejects.toThrow('Timeout connecting to localhost:5899 after 15000ms');
+        expect(socketMock.setTimeout).toHaveBeenCalledWith(15000);
+        expect(socketMock.connect).toHaveBeenCalledWith(5899, 'localhost');
+        expect(socketMock.destroy).toHaveBeenCalled();
+
     });
 });
 
