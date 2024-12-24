@@ -38,11 +38,11 @@ function isPortOpen(host, port, timeout = 15000) {
     });
 }
 
-async function waitForVMToBeReady(host, port, maxRetries = 10, delay = 1000) {
+async function waitForVMToBeReady(host, port, maxRetries = 10, delay = 1000, isPortOpenFn = isPortOpen) {
     for (let i = 0; i < maxRetries; i++) {
         console.log("About to wait for port. Counter is: " + i);
         try {
-            const portOpen = await isPortOpen(host, port);
+            const portOpen = await isPortOpenFn(host, port);
             console.log("Finished waiting for port. Counter is: " + i);
             if (portOpen) {
                 console.log("Port became open. Counter is: " + i);
@@ -56,4 +56,4 @@ async function waitForVMToBeReady(host, port, maxRetries = 10, delay = 1000) {
     throw new Error(`VM did not become ready on ${host}:${port} after ${maxRetries} retries`);
 }
 
-module.exports = { waitForVMToBeReady };
+module.exports = { isPortOpen, waitForVMToBeReady };
