@@ -34,7 +34,7 @@ describe('isPortOpen', () => {
                 if (event === 'error') callback(new Error('Connection failed'));
             }),
             destroy: jest.fn(),
-            connect: jest.fn(),
+            connect: jest.fn(() => { throw new Error('Triggered a connection failure'); }),
         };
 
         net.Socket.mockImplementation(() => socketMock);
@@ -65,6 +65,23 @@ describe('isPortOpen', () => {
         expect(socketMock.destroy).toHaveBeenCalled();
 
     });
+
+    it('should reject with an error if an unexpected error occurs', async () => {
+        const net = require('net');
+
+        const socketMock = {
+            setTimeout: jest.fn(),
+            once: jest.fn(),
+            destroy: jest.fn(),
+            connect: jest.fn(() => { throw new Error('Unexpected error'); }),
+        };
+
+        net.Socket.mockImplementation(() => socketMock);
+
+        await expect(portReadinessChecker.isPortOpen('localhost', 5899, 15000, socketMock)).rejects.toThrow('Unexpected error: Unexpected error');
+        expect(socketMock.setTimeout).toHaveBeenCalledWith(15000);
+        expect(socketMock.connect).toHaveBeenCalledWith(5899, 'localhost');
+    });
 });
 
 describe('waitForVMToBeReady', () => {
@@ -85,6 +102,14 @@ describe('waitForVMToBeReady', () => {
 
     it('should throw an error if the VM does not become ready', async () => {
         const isPortOpenMock = jest.fn().mockResolvedValue(false);
+
+        await expect(portReadinessChecker.waitForVMToBeReady('localhost', 5899, 3, 100, isPortOpenMock))
+            .rejects.toThrow('VM did not become ready on localhost:5899 after 3 retries');
+        expect(isPortOpenMock).toHaveBeenCalled();
+    });
+
+    it('should catch an error thrown by isPortOpen', async () => {
+        const isPortOpenMock = jest.fn().mockRejectedValue(new Error('Mocked error'));
 
         await expect(portReadinessChecker.waitForVMToBeReady('localhost', 5899, 3, 100, isPortOpenMock))
             .rejects.toThrow('VM did not become ready on localhost:5899 after 3 retries');

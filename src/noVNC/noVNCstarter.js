@@ -16,7 +16,6 @@ function startNoVNCProxy() {
             }
         );
 
-
         // Listen for stdout (normal output)
         noVNCProcess.stdout.on('data', (data) => {
             console.log(`noVNC output: ${data}`);

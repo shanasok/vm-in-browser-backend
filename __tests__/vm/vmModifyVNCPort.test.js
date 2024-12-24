@@ -109,6 +109,15 @@ describe('vmModifyVNCPort', () => {
             expect(execPromiseMock).toHaveBeenCalledWith(cloneCommand);
             expect(result).toBe(`VM Successfully cloned to ${clonedVmx}`);
         });
+
+        it('should throw an error if execPromise is not initialized', async () => {
+            const templateVmx = 'template.vmx';
+            const clonedVmx = 'cloned.vmx';
+
+            execPromiseMock.mockResolvedValueOnce({stderr: 'Error happened'});
+
+            await expect(cloneVmWithVmrun(templateVmx, clonedVmx)).rejects.toThrow('Error happened');
+        });
     });
 
 });
