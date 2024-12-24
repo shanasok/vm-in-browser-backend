@@ -1,6 +1,6 @@
 const { expect } = require('@jest/globals');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const { spawn} = require('child_process');
 const config = require('../../.config.js');
 
 const { getNextVncPort, updateVncPort, startWebsockify, getWebSocketPort } = require('../../src/vm/vmModifyVNCPort.js');
@@ -9,6 +9,9 @@ const {cloneVmWithVmrun, setExecPromise} = require("../../src/vm/vmModifyVNCPort
 
 jest.mock('fs');
 jest.mock('child_process');
+jest.mock('util', () => ({
+    promisify: jest.fn(), // Mock promisify globally
+}));
 
 
 describe('vmModifyVNCPort', () => {
@@ -65,6 +68,7 @@ describe('vmModifyVNCPort', () => {
     });
 
     describe('startWebsockify', () => {
+
         it('should start a websockify instance', async () => {
             const webDir = '/path/to/web';
             const websocketPort = 6080;
@@ -85,6 +89,87 @@ describe('vmModifyVNCPort', () => {
                 `${vncHost}:${vncPort}`
             ]);
             expect(result).toBe(mockProcess);
+        });
+
+        it('should log output if websockify process writes to stdout', async () => {
+            const webDir = '/path/to/web';
+            const websocketPort = 6080;
+            const vncHost = 'localhost';
+            const vncPort = 5900;
+
+            const mockProcess = {
+                stdout: { on: jest.fn((event, callback) => {
+                        if (event === 'data') {
+                            callback('Mocked stdout output');
+                        }
+                    }) },
+                stderr: { on: jest.fn() },
+                on: jest.fn(),
+            };
+            spawn.mockReturnValue(mockProcess);
+
+            await startWebsockify(webDir, websocketPort, vncHost, vncPort);
+
+            expect(spawn).toHaveBeenCalledWith('websockify', [
+                '--web', webDir,
+                websocketPort.toString(),
+                `${vncHost}:${vncPort}`
+            ]);
+            expect(mockProcess.stdout.on).toHaveBeenCalledWith('data', expect.any(Function));
+        });
+
+        it('should log an error if websockify process writes to stderr', async () => {
+            const webDir = '/path/to/web';
+            const websocketPort = 6080;
+            const vncHost = 'localhost';
+            const vncPort = 5900;
+
+            const mockProcess = {
+                stdout: { on: jest.fn() },
+                stderr: { on: jest.fn((event, callback) => {
+                        if (event === 'data') {
+                            callback('Mocked stderr error');
+                        }
+                    }) },
+                on: jest.fn(),
+            };
+            spawn.mockReturnValue(mockProcess);
+
+            await startWebsockify(webDir, websocketPort, vncHost, vncPort);
+
+            expect(spawn).toHaveBeenCalledWith('websockify', [
+                '--web', webDir,
+                websocketPort.toString(),
+                `${vncHost}:${vncPort}`
+            ]);
+            expect(mockProcess.stderr.on).toHaveBeenCalledWith('data', expect.any(Function));
+        });
+
+        it('should log output if websockify process writes to stdout', async () => {
+            const webDir = '/path/to/web';
+            const websocketPort = 6080;
+            const vncHost = 'localhost';
+            const vncPort = 5900;
+
+            const mockProcess = {
+                stdout: { on: jest.fn() },
+                stderr: { on: jest.fn() },
+                on: jest.fn((event, callback) => {
+                    if (event === 'close') {
+                        callback(0);
+                    }
+                }),
+            };
+            spawn.mockReturnValue(mockProcess);
+
+            await startWebsockify(webDir, websocketPort, vncHost, vncPort);
+
+            expect(spawn).toHaveBeenCalledWith('websockify', [
+                '--web', webDir,
+                websocketPort.toString(),
+                `${vncHost}:${vncPort}`
+            ]);
+            expect(mockProcess.on).toHaveBeenCalledWith('close', expect.any(Function));
         });
     });
 
@@ -110,6 +195,7 @@ describe('vmModifyVNCPort', () => {
             expect(result).toBe(`VM Successfully cloned to ${clonedVmx}`);
         });
 
+
         it('should throw an error if execPromise is not initialized', async () => {
             const templateVmx = 'template.vmx';
             const clonedVmx = 'cloned.vmx';
@@ -119,7 +205,6 @@ describe('vmModifyVNCPort', () => {
             await expect(cloneVmWithVmrun(templateVmx, clonedVmx)).rejects.toThrow('Error happened');
         });
     });
-
 });
 
 
