@@ -80,7 +80,7 @@ function setExecPromise(mockedExecPromise) {
 // Execute the cloning operation with vmrun (this requires vmrun to be installed and accessible)
 async function cloneVmWithVmrun(templateVmx, clonedVmx) {
     if (!execPromise) {
-        throw new Error('execPromise is not initialized. Call initializeExecPromise() first.');
+        setExecPromise(util.promisify(exec));
     }
 
     // Use vmrun to clone the VM
